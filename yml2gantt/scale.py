@@ -1,6 +1,7 @@
 """Time scales: map dates to x positions and build the grid."""
 
 import datetime as dt
+import math
 from numbers import Real
 
 #: Supported decompositions.
@@ -83,7 +84,8 @@ class Scale:
     start : date, str or float
         Start of the gantt (a number for ``"abstract"``).
     end : date, str or float, optional
-        End of the gantt (exclusive). Give either ``end`` or ``duration``.
+        End of the gantt (exclusive). Give ``end``, ``duration`` or
+        neither: the length is then set later by `fit`.
     duration : float or str, optional
         Length of the gantt, in days (``"abstract"``: in units).
     label_format : str, optional
@@ -99,8 +101,8 @@ class Scale:
                  label_format=None, label_every=1, step=1):
         if kind not in SCALES:
             raise ValueError(f"Unknown scale {kind!r}, use one of {SCALES}")
-        if (end is None) == (duration is None):
-            raise ValueError("Give exactly one of 'end' or 'duration'")
+        if end is not None and duration is not None:
+            raise ValueError("Give 'end' or 'duration', not both")
         self.kind = kind
         self.label_format = label_format or DEFAULT_LABELS[kind]
         self.label_every = int(label_every)
@@ -110,10 +112,50 @@ class Scale:
             self.start = float(start)
         else:
             self.start = to_date(start)
-        self.length = (self.to_x(end) if duration is None
-                       else self.to_span(duration))
-        if self.length <= 0:
-            raise ValueError("The gantt must end after its start")
+        #: True when the length comes from the tasks (see `fit`).
+        self.auto = end is None and duration is None
+        self.length = None
+        if not self.auto:
+            self.length = (self.to_x(end) if duration is None
+                           else self.to_span(duration))
+            if self.length <= 0:
+                raise ValueError("The gantt must end after its start")
+
+    def fit(self, last_end=None, last_point=None):
+        """Set the length so that the axis covers the content.
+
+        The axis stops at the first period boundary at or after
+        ``last_end``, and strictly after ``last_point`` (so a milestone
+        is not drawn on the border).
+
+        Parameters
+        ----------
+        last_end : float, optional
+            End of the last bar.
+        last_point : float, optional
+            Position of the last milestone row.
+        """
+        length = 0.0
+        if last_end is not None:
+            length = self._boundary(last_end, strict=False)
+        if last_point is not None:
+            length = max(length, self._boundary(last_point, strict=True))
+        if length <= 0:
+            raise ValueError("The gantt must end after its start: "
+                             "all tasks are before the start")
+        self.length = length
+
+    def _boundary(self, x, strict):
+        """First period boundary at or after ``x`` (after, if strict)."""
+        x = round(x, 9)  # ignore float noise such as 7.000000001
+        if self.abstract:
+            k = x / self.step
+            k = math.floor(k) + 1 if strict else math.ceil(k)
+            return float(k * self.step)
+        p = _period_start(self.kind, self.start)
+        while self.to_x(p) < x or (strict and self.to_x(p) == x):
+            p = _next_period(self.kind, p)
+        return self.to_x(p)
 
     @property
     def abstract(self):

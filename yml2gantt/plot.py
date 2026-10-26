@@ -93,6 +93,7 @@ def draw(gantt, ax=None, figsize=None, lighten=0.3):
     """
     if not gantt.tasks:
         raise ValueError("The gantt has no task")
+    gantt.fit_scale()
     rows = sum(1 + len(t.subtasks) for t in gantt.tasks)
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize or (11, max(3, 0.35 * rows + 1.5)))

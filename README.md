@@ -9,8 +9,7 @@ Write your project plan in a small YAML file, get a clean gantt chart
 
 ```yaml
 gantt:
-  start: 2026-01-05
-  duration: 4w
+  start: 2026-01-05     # the chart ends after the last task
 
 tasks:
   - {name: Write, duration: 2w}
@@ -126,7 +125,7 @@ On the `abstract` scale, all positions and lengths are plain numbers.
 | Key            | Description |
 |----------------|-------------|
 | `start`        | Start date (`2026-01-05`, `"2025-W38-7"`), or a number for the `abstract` scale. Default `0`. |
-| `end`          | End of the chart (exclusive). Give `end` **or** `duration`. |
+| `end`          | End of the chart (exclusive). Give `end`, `duration` or neither. |
 | `duration`     | Length of the chart: days (`90`) or `"3d"`, `"13w"`. |
 | `scale`        | `day`, `week` (default), `month`, `trimester` or `abstract`. |
 | `title`        | Chart title. |
@@ -136,6 +135,11 @@ On the `abstract` scale, all positions and lengths are plain numbers.
 | `label_format` | Period label, see below. |
 | `label_every`  | Label only one period out of N (default `1`). |
 | `step`         | Period size for the `abstract` scale (default `1`). |
+
+Without `end` and `duration`, the chart ends after the last task, at
+the end of its period (week, month, …, or `step` on the abstract
+scale), so the grid ends cleanly. A milestone row gets one more period,
+so its diamond is not drawn on the border.
 
 ### Time scales and labels
 

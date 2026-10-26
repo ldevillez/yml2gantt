@@ -258,7 +258,9 @@ class Gantt:
     start : date, str or float
         Start of the gantt (a number for ``"abstract"``).
     end : date, str or float, optional
-        End of the gantt (exclusive). Give either ``end`` or ``duration``.
+        End of the gantt (exclusive). Give ``end`` or ``duration``, or
+        neither: the gantt then ends after its last task, at the end of
+        that period (computed when drawing).
     duration : float or str, optional
         Length of the gantt (``90``, ``"13w"``).
     scale : {"day", "week", "month", "trimester", "abstract"}
@@ -312,6 +314,7 @@ class Gantt:
             ``(x, label)``, or ``None`` when no line is drawn (no ``now``,
             and today is hidden, abstract or outside the gantt).
         """
+        self.fit_scale()
         if self.now is not None:
             x, default = self.now, "Now"
         elif self.show_today and not self.scale.abstract:
@@ -368,6 +371,27 @@ class Gantt:
                                milestone=milestone, label=label)
         self.tasks.append(task)
         return task
+
+    def fit_scale(self):
+        """Set the end of the gantt from its tasks.
+
+        Only when neither ``end`` nor ``duration`` was given. Bars and
+        milestones on bars count up to their end; milestone rows get
+        room after them. Called by `draw`.
+        """
+        if not self.scale.auto:
+            return
+        ends, points = [], []
+        for task in self.tasks:
+            for t in (task, *task.subtasks):
+                if t.milestone:
+                    points.append(t.start)
+                else:
+                    ends.append(t.end)
+                    ends.extend(m.position for m in t.milestones)
+        if not ends and not points:
+            raise ValueError("The gantt has no task to compute its end")
+        self.scale.fit(max(ends, default=None), max(points, default=None))
 
     def draw(self, ax=None, **kwargs):
         """Draw the gantt with matplotlib.
