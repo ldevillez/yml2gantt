@@ -1,0 +1,52 @@
+# A three-week sprint on a day scale.
+#
+# Shows: day scale, two-line period labels, `end` dates instead of
+# durations, hex colors, people names written in the bars (`label`),
+# a milestone at a date on a bar, an interrupted task (`segments`) and
+# a "we are here" line at a fixed date (`now`).
+
+gantt:
+  start: 2026-03-02          # a Monday
+  end: 2026-03-23            # exclusive
+  scale: day
+  label_format: "{date:%a}\n{date:%d}"   # "Mon" above "02"
+  title: Sprint 14 - checkout redesign
+  now: 2026-03-11
+  now_label: We are here
+
+tasks:
+  - name: Planning
+    label: ""
+    start: 0
+    duration: 1
+    color: "#6c757d"
+    milestones: [Sprint goal]
+
+  - name: Design
+    start: 2026-03-03
+    color: "#7b61ff"
+    subtasks:
+      - {name: Wireframes, duration: 2d, label: Ana}
+      - {name: Visual design, start: 2d, end: 2026-03-09, label: Ana}
+      - {name: Design sign-off, start: 2026-03-09, milestone: true}
+
+  - name: Implementation
+    start: 2026-03-05
+    color: "#0f9d58"
+    subtasks:
+      - {name: API, duration: 5, label: Ben}
+      - name: Front-end
+        label: Chloé
+        start: 2026-03-09
+        end: 2026-03-17
+        milestones: [{name: Freeze, at: 2026-03-16}]
+
+  - name: QA                 # stopped for a day by a team offsite
+    start: 2026-03-12
+    color: "#f4b400"
+    segments:
+      - {duration: 2, label: Test}
+      - {start: 3, end: 2026-03-19, label: Retest}
+
+  - {name: Release, start: 2026-03-19, milestone: true, color: tab:red}
+  - {name: Retrospective, start: 2026-03-20, duration: 1, label: "", color: "#6c757d"}

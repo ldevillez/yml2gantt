@@ -1,0 +1,11 @@
+# The smallest useful file: a 4-week chart with three entries.
+# Draw it with:  yml2gantt examples/minimal.yml
+
+gantt:
+  start: 2026-01-05
+  duration: 4w
+
+tasks:
+  - {name: Write, duration: 2w}
+  - {name: Review, start: 2w, duration: 1w}
+  - {name: Ship, start: 3w, milestone: true}

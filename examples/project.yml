@@ -1,0 +1,61 @@
+# Opening a neighbourhood bakery, on a 13-week week scale.
+#
+# Shows: week scale, a start given as an ISO week date, offsets and
+# durations in days, subtasks (a task without duration spans them),
+# milestone rows (a whole chart row), a colored final milestone, and
+# short `label`s for bars too small for their name.
+#
+# Task starts are offsets in days from the chart start; subtask starts
+# are offsets from their parent's start.
+
+gantt:
+  start: "2026-W10-1"        # Monday of ISO week 10
+  duration: 90
+  scale: week
+  title: Opening the bakery
+
+tasks:
+  - name: Business plan
+    label: ""
+    start: 0
+    duration: 4
+
+  - name: Permits
+    start: 4
+    subtasks:
+      - {name: Fill in the forms, label: Forms, start: 0, duration: 5}
+      - {name: Hygiene inspection, label: Inspection, start: 5, duration: 5}
+      - {name: Waiting for the city, start: 10, duration: 40}
+      - {name: Permit granted, start: 50, milestone: true}
+
+  - name: Shop renovation
+    start: 14
+    subtasks:
+      - {name: Plumbing and electricity, label: Plumbing, start: 0, duration: 10}
+      - {name: Painting, start: 10, duration: 5}
+      - {name: Counter and shelves, label: Furniture, start: 15, duration: 7}
+
+  - {name: Order the oven, label: Oven, start: 14, duration: 7}
+  - {name: Find a flour supplier, label: Flour, start: 21, duration: 7}
+
+  - name: Recipes
+    start: 28
+    subtasks:
+      - {name: Bread, start: 0, duration: 14}
+      - {name: Pastries, start: 7, duration: 14}
+
+  - name: Team
+    start: 41
+    subtasks:
+      - {name: Job ads, start: 0, duration: 7}
+      - {name: Interviews, start: 7, duration: 7}
+      - {name: Training, start: 14, duration: 10}
+
+  - name: Launch
+    start: 65
+    subtasks:
+      - {name: Flyers and social media, start: 0, duration: 14}
+      - {name: Soft opening for neighbours, label: "", start: 20, duration: 3}
+
+  - {name: Final clean-up, label: "", start: 87, duration: 2}
+  - {name: Grand opening, start: 89, milestone: true, color: tab:red}

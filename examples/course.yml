@@ -1,0 +1,35 @@
+# A 14-week painting course on an abstract scale (no calendar dates).
+#
+# Shows: abstract scale with a custom label ("W{n}"), one label every
+# two periods (`label_every`), fractional positions, and a "now" line
+# in the middle of week 6.
+
+gantt:
+  start: 0
+  duration: 14
+  scale: abstract
+  step: 1
+  label_format: "W{n}"
+  label_every: 2
+  title: Painting course - spring term
+  now: 5.5
+
+tasks:
+  - name: Studio sessions
+    start: 0
+    duration: 12
+    label: Tue + Fri
+    milestones: [{name: Mid-term review, at: 7}]
+
+  - name: Final piece
+    start: 1
+    subtasks:
+      - {name: Choose a subject, duration: 1, label: ""}
+      - {name: Sketches, start: 1, duration: 3}
+      - {name: Painting, start: 4, duration: 6, milestones: [Varnish]}
+      - {name: Exhibition, start: 11.5, milestone: true}
+
+  - name: Holidays
+    start: 12
+    duration: 2
+    color: tab:gray

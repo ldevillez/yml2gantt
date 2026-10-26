@@ -1,0 +1,50 @@
+# Building a house over three years, on a trimester (quarter) scale.
+#
+# Shows: trimester scale, the {q} placeholder in labels, nested tasks
+# whose bar spans their subtasks, percentage milestones, a seasonal
+# task drawn as segments, and the "now" line with a custom text.
+
+gantt:
+  start: 2026-01-01
+  end: 2029-01-01
+  scale: trimester
+  label_format: "Q{q}\n{date:%Y}"
+  title: Our new house
+  now: 2026-11-15
+  now_label: We are here
+
+tasks:
+  - {name: Find a plot, start: 0, duration: 20w, color: tab:gray,
+     milestones: [Deed signed]}
+
+  - name: Design
+    start: 2026-05-01
+    subtasks:
+      - {name: Sketches with the architect, label: Sketches, duration: 12w}
+      - {name: Final plans, label: Plans, start: 10w, duration: 10w, milestones: [Plans OK]}
+
+  - name: Building permit
+    label: Permit
+    start: 2026-09-01
+    duration: 24w
+    milestones: [{name: Approved, at: 100%}]
+
+  - name: Construction
+    start: 2027-03-01
+    subtasks:
+      - {name: Foundations, duration: 8w}
+      - {name: Walls and roof, label: Structure, start: 8w, duration: 20w,
+         milestones: [{name: Roof on, at: 90%}]}
+      - {name: Interior, label: Fit-out, start: 28w, duration: 24w,
+         milestones: [{name: Inspection, at: 80%}]}
+
+  - name: Garden
+    start: 2027-04-01
+    color: tab:olive
+    segments:                # only in spring
+      - {start: 2027-04-01, end: 2027-06-01, label: Trees}
+      - {start: 2028-04-01, end: 2028-06-01, label: Lawn}
+
+  - {name: Move in, start: 2028-07-01, end: 2028-08-15, color: tab:red, label: Boxes}
+  - {name: Bank loan signed, start: 2026-10-15, milestone: true, color: tab:green}
+  - {name: Housewarming party, start: 2028-09-12, milestone: true, color: tab:red}

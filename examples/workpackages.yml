@@ -1,0 +1,89 @@
+# A 4-year research project ("SeaSense": low-cost ocean-monitoring
+# buoys), split into work packages, on an abstract scale in quarters.
+#
+# Abstract scale: 1 unit = 1 quarter, x = 0 is the start of Q1.
+# Work packages span their tasks; task starts are offsets from the
+# work package start.
+#
+# label: text written in the bar (who does the work: the partners
+#   UniA, UniB and the company Bo), the name stays on the y axis.
+#   Work packages use label: "" to leave their bar empty.
+#
+# milestones: drawn on the bar of their task (D = deliverable,
+#   P = publication).
+#   - D1.1                  -> at the end of the bar
+#   - {name: P3, at: 40%}   -> 40% of the bar length
+#   - {name: P1, at: 4}     -> 4 quarters after the task start
+#
+# segments: several pieces of bar on one row (T3.1, T4.1, T4.2).
+#   Segment starts are offsets from the task start; each segment shows
+#   the task label unless it has its own.
+
+gantt:
+  start: 0
+  duration: 16
+  scale: abstract
+  step: 1
+  label_format: "Q{n}"
+  title: SeaSense project plan
+  now: 5.5          # "we are here" line: middle of Q6
+
+tasks:
+  - name: WP1 Sensors
+    label: ""
+    start: 0
+    subtasks:
+      - {name: "T1.1 Sensor selection", label: "UniA", start: 0, duration: 4, milestones: [D1.1]}
+      - {name: "T1.2 Low-power electronics", label: "UniA+Bo", start: 3, duration: 4}
+      - {name: "T1.3 Anti-fouling coating", label: "UniB", start: 6, duration: 5, milestones: [D1.2]}
+
+  - name: WP2 Data platform
+    label: ""
+    start: 0
+    subtasks:
+      - {name: "T2.1 Radio link", label: "Bo", start: 0, duration: 6,
+         milestones: [{name: P1, at: 4}]}
+      - {name: "T2.2 Cloud storage", label: "Bo", start: 2, duration: 5}
+      - {name: "T2.3 Public dashboard", label: "UniB+Bo", start: 5, duration: 6,
+         milestones: [{name: D2.1, at: 5}]}
+
+  - name: WP3 Buoy design
+    label: ""
+    start: 2          # offsets below are from Q3
+    subtasks:
+      - name: "T3.1 Hull and mooring"
+        start: 0
+        segments:
+          - {start: 0, duration: 3, label: "UniB"}
+          - {start: 3, duration: 3, label: "+Bo"}
+        milestones: [D3.1]
+      - {name: "T3.2 Solar power", label: "UniA", start: 1, duration: 6,
+         milestones: [{name: P2, at: 5}]}
+      - {name: "T3.3 Assembly guide", label: "Bo", start: 6, duration: 4, milestones: [D3.2]}
+
+  - name: WP4 Field trials
+    label: ""
+    start: 8
+    subtasks:
+      - name: "T4.1 Harbour trial"
+        label: "UniB+Bo"          # written in each segment
+        start: 0
+        segments:
+          - {start: 0, duration: 2}
+          - {start: 3, duration: 1, label: Retest}
+        milestones: [P3]          # end of the last segment
+      - name: "T4.2 Open-sea campaign"
+        start: 2
+        segments:
+          - {start: 0, duration: 2, label: "Summer"}
+          - {start: 4, duration: 2, label: "Summer"}
+        milestones: [{name: P4, at: 40%}]
+
+  - name: WP5 Outreach
+    label: ""
+    start: 0
+    subtasks:
+      - {name: "T5.1 Website", label: "Bo", start: 0, duration: 2}
+      - {name: "T5.2 School workshops", label: "UniA+UniB", start: 4, duration: 12,
+         milestones: [{name: D5.1, at: 80%}]}
+      - {name: "T5.3 Final conference", label: "All", start: 15, duration: 1}

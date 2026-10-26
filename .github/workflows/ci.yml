@@ -1,0 +1,42 @@
+# Checks every push and pull request: install the package on each
+# supported Python, draw every example, and check the built package.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install .
+      - name: Draw every example
+        run: |
+          mkdir -p out
+          for f in examples/*.yml; do
+            yml2gantt "$f" -o "out/$(basename "$f" .yml).png" --no-show
+          done
+          python examples/from_python.py
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*

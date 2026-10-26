@@ -1,0 +1,49 @@
+# An 18-month product roadmap on a month scale.
+#
+# Shows: month scale with a custom label, no "today" line, tasks given
+# by dates only, colored milestones placed at dates on a bar, a task
+# paused over the summer (`segments` with their own color) and
+# milestone rows inside a group.
+
+gantt:
+  start: 2026-01-01
+  end: 2027-07-01
+  scale: month
+  label_format: "{date:%b}\n{date:%Y}"
+  title: Product roadmap
+  show_today: false
+
+tasks:
+  - name: Mobile app
+    start: 2026-01-01
+    color: tab:blue
+    subtasks:
+      - {name: iOS, start: 2026-01-01, end: 2026-07-01}
+      - {name: Android, start: 2026-03-01, end: 2026-09-01}
+      - {name: Store release, start: 2026-09-15, milestone: true}
+
+  - name: Platform migration
+    label: Migration
+    start: 2026-02-01
+    color: tab:green
+    segments:
+      - {start: 2026-02-01, end: 2026-06-15}
+      - {start: 2026-06-15, end: 2026-09-01, label: "", color: lightgrey}   # paused
+      - {start: 2026-09-01, end: 2027-01-01}
+    milestones:
+      - {name: Data moved, at: 2026-06-01, color: tab:green}
+
+  - name: Marketing
+    start: 2026-06-01
+    end: 2027-06-01
+    color: tab:orange
+    milestones:
+      - {name: Campaign, at: 2026-09-15, color: tab:red}
+      - {name: Trade show, at: 2027-03-10}
+
+  - name: v2.0
+    start: 2026-11-01
+    color: tab:purple
+    subtasks:
+      - {name: Beta, start: 0, duration: 10w}
+      - {name: Public launch, start: 2027-02-01, milestone: true}

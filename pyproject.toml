@@ -1,0 +1,46 @@
+# Standard (PEP 621) metadata: works with Poetry 2, pip, uv and `python -m build`.
+
+[project]
+name = "yml2gantt"
+version = "0.1.0"
+description = "Draw gantt charts with matplotlib from a simple YAML file (or from Python)."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Louis Devillez", email = "louis.devillez@gmail.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.5",
+    "pyyaml>=6.0",
+]
+keywords = ["gantt", "gantt-chart", "yaml", "matplotlib", "project-management", "planning", "timeline"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Scheduling",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+[project.urls]
+Homepage = "https://github.com/ldevillez/yml2gantt"
+Repository = "https://github.com/ldevillez/yml2gantt"
+Issues = "https://github.com/ldevillez/yml2gantt/issues"
+
+[project.scripts]
+yml2gantt = "yml2gantt.cli:main"
+
+[tool.poetry]
+packages = [{ include = "yml2gantt" }]
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
