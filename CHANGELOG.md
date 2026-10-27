@@ -6,6 +6,8 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+##  [0.2.0] - 2026-10-27
+
 ### Added
 
 - Automatic chart end: without `end` or `duration`, the chart stops
