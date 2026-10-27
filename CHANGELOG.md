@@ -10,6 +10,28 @@ follow [Semantic Versioning](https://semver.org/).
 
 - Automatic chart end: without `end` or `duration`, the chart stops
   after the last task, at the end of its period.
+- Checks of the input, with every problem of the file listed at once,
+  its line and a hint ("did you mean 'duration'?"). New checks: keys
+  given twice, empty values (e.g. an unquoted hex color), invalid dates,
+  durations, percentages, colors, `step`, `label_every`,
+  `label_format`, booleans where text is expected, tasks without a
+  length, segments before their task or overlapping, the output file
+  format and folder.
+- Warnings for tasks or milestones cut by the chart, subtasks out of
+  their task, a `now` line outside the chart, tasks sharing a color.
+- `GanttError` (a `ValueError`) with the list of `issues`, and
+  `Gantt.check()` for the warnings.
+- Tests (pytest), run by the CI.
+
+### Changed
+
+- Invalid input raises `GanttError` instead of `TypeError`.
+- `Gantt.start` has no default on dated scales: a missing start date is
+  reported instead of failing on `0`.
+- Errors no longer end with a Python traceback: an invalid
+  `label_format`, `step: 0` (which hung), `label_every: 0`, a file that
+  is a list or an output format matplotlib does not know are reported
+  as errors.
 
 ## [0.1.0] - 2026-10-26
 

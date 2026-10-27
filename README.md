@@ -68,9 +68,30 @@ yml2gantt examples/workpackages.yml -o plan.png --no-show
 python -m yml2gantt examples/sprint.yml     # same thing
 ```
 
-On an error in the file (unknown key, bad date, …) the tool prints a
-message such as `yml2gantt: error: task: unknown keys ['durtion']` and
-exits with status 1.
+### Errors and warnings
+
+The file is checked before drawing, and every problem is listed at once,
+with its line and a hint on how to fix it. The tool then exits with
+status 1:
+
+```text
+yml2gantt: error in plan.yml: 3 errors:
+  - line 6, task 'Permits': unknown key 'durtion' (did you mean 'duration'?). Allowed keys: color, duration, end, label, milestone, milestones, name, segments, start, subtasks
+  - line 12, task 'Shop' > subtask 'Paint': invalid 'duration' '3m': unknown unit 'm', use 'd' (days) or 'w' (weeks). There is no month unit, as months have different lengths: use dates instead
+  - line 20, task 'Launch': 'color' has no value: a hex color must be in quotes, color: "#3366cc" (an unquoted # starts a comment in YAML)
+```
+
+Among the checks: misspelled keys, sections or scale names (with a
+suggestion), keys given twice, invalid dates (`2026-02-30`), durations,
+percentages and colors, unquoted `yes`/`no` read as booleans by YAML,
+tasks without a length, overlapping segments, YAML syntax errors (such
+as tabs), and an output file with an unknown format or folder (checked
+before drawing).
+
+Things that do not stop the drawing are printed as warnings: a task or
+milestone cut by the chart end, subtasks going out of their task, a
+`now` line outside the chart, top-level tasks with the same name (they
+get the same color).
 
 ## The YAML format
 
@@ -101,7 +122,9 @@ tasks:
 ```
 
 Keys are case-insensitive, and `task` is accepted instead of `name`.
-Unknown keys are reported as errors, so typos do not go unnoticed.
+Unknown keys are reported as errors, so typos do not go unnoticed. A key
+written with no value (`color:`) is an error too, except for the lists
+(`tasks`, `subtasks`, `milestones`, `segments`).
 
 ### Dates, offsets and durations
 
@@ -124,7 +147,7 @@ On the `abstract` scale, all positions and lengths are plain numbers.
 
 | Key            | Description |
 |----------------|-------------|
-| `start`        | Start date (`2026-01-05`, `"2025-W38-7"`), or a number for the `abstract` scale. Default `0`. |
+| `start`        | Start date (`2026-01-05`, `"2025-W38-7"`), required on dated scales; a number on the `abstract` scale (default `0`). |
 | `end`          | End of the chart (exclusive). Give `end`, `duration` or neither. |
 | `duration`     | Length of the chart: days (`90`) or `"3d"`, `"13w"`. |
 | `scale`        | `day`, `week` (default), `month`, `trimester` or `abstract`. |
@@ -133,8 +156,8 @@ On the `abstract` scale, all positions and lengths are plain numbers.
 | `now`          | Draw the "we are here" line at this position instead of today: a date or an offset (e.g. `5.5` on an abstract scale). Works on every scale. |
 | `now_label`    | Text above that line. Default: `Now` (with `now`) or `Today`. `""` for no text. |
 | `label_format` | Period label, see below. |
-| `label_every`  | Label only one period out of N (default `1`). |
-| `step`         | Period size for the `abstract` scale (default `1`). |
+| `label_every`  | Label only one period out of N: a whole number, default `1`. |
+| `step`         | Period size for the `abstract` scale: a number above 0, default `1`. |
 
 Without `end` and `duration`, the chart ends after the last task, at
 the end of its period (week, month, …, or `step` on the abstract
@@ -199,7 +222,7 @@ milestones:
   - {name: Freeze, at: 2026-02-01, color: tab:red}   # a date
 ```
 
-`at` defaults to `100%`. Percentages use the drawn bar, so they also
+`at` defaults to `100%`. Percentages go from `0%` to `100%` and use the drawn bar, so they also
 work on a task that spans its subtasks. Milestones are black unless
 `color` is given. The label goes to the right of the diamond, or to its
 left in the last 20% of the chart.
@@ -235,7 +258,8 @@ several pieces of bar on its row:
 | `label`      | Text in the segment. Default: the task `label` (or its name). `""` leaves it empty. |
 
 The task spans from its `start` to the end of its last segment: this is
-what its parent and its percentage milestones use. Touching segments are
+what its parent and its percentage milestones use. Segments cannot start
+before their task or overlap each other; touching segments are
 separated by a thin white line. A task with segments takes no
 `duration`/`end` and no `subtasks`.
 
@@ -317,15 +341,28 @@ fig.savefig("plan.pdf")
 
 | Call | Description |
 |------|-------------|
-| `Gantt(start=0, end=None, duration=None, scale="week", title=None, show_today=True, label_format=None, label_every=1, step=1, now=None, now_label=None)` | Same keys as the `gantt` section. |
+| `Gantt(start=None, end=None, duration=None, scale="week", title=None, show_today=True, label_format=None, label_every=1, step=1, now=None, now_label=None)` | Same keys as the `gantt` section. |
 | `g.add_task(name, start=0, duration=None, end=None, color=None, milestone=False, label=None)` | Adds a top-level task and returns it. |
 | `task.add_subtask(...)` | Same arguments as `add_task`; `start` is relative to the parent. |
 | `task.add_milestone(name, at="100%", color=None)` | Adds a milestone on the bar. |
 | `task.add_segment(start=0, duration=None, end=None, color=None, label=None)` | Adds a piece of bar on the task's row. |
 | `g.draw(ax=None, figsize=None, lighten=0.3)` | Draws and returns `(fig, ax)`. `lighten` sets how light the subtask colors are (0 = white, 1 = parent color). |
+| `g.check()` | Returns the warnings (list of text), see [Errors and warnings](#errors-and-warnings). |
 
-Wrong input raises `ValueError` (or `TypeError` for a value of the
-wrong type) with a message naming the task.
+Wrong input raises `GanttError` (a subclass of `ValueError`) with a
+message naming the task. `load_yaml` and `from_dict` list every problem
+of the description in `err.issues`, each with its `message`, `where`
+(e.g. `task 'A' > subtask 'B'`) and `line` in the file:
+
+```python
+from yml2gantt import GanttError, load_yaml
+
+try:
+    g = load_yaml("plan.yml")
+except GanttError as err:
+    for issue in err.issues:
+        print(issue.line, issue.where, issue.message)
+```
 
 ### Loading YAML from Python
 
@@ -379,8 +416,9 @@ load_yaml("examples/roadmap.yml").draw(ax=ax2)
 ```sh
 git clone https://github.com/ldevillez/yml2gantt
 cd yml2gantt
-poetry install          # or: pip install -e .
+poetry install          # or: pip install -e . pytest
 poetry run yml2gantt examples/minimal.yml
+poetry run pytest       # tests in tests/
 ```
 
 Project layout:
@@ -393,6 +431,8 @@ yml2gantt/
   io.py           loading from a dict or a .yml file
   plot.py         drawing with matplotlib
   colors.py       color helpers
+  errors.py       GanttError and the checks of the values
+tests/            tests (pytest)
 examples/         example charts
 docs/images/      pictures used in this README
 ```

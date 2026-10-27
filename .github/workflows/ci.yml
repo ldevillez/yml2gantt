@@ -1,5 +1,6 @@
 # Checks every push and pull request: install the package on each
-# supported Python, draw every example, and check the built package.
+# supported Python, run the tests, draw every example, and check the
+# built package.
 name: CI
 
 on:
@@ -21,7 +22,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install .
+      - run: pip install . pytest
+      - name: Run the tests
+        run: pytest
       - name: Draw every example
         run: |
           mkdir -p out

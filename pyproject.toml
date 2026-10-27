@@ -41,6 +41,12 @@ yml2gantt = "yml2gantt.cli:main"
 [tool.poetry]
 packages = [{ include = "yml2gantt" }]
 
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [build-system]
 requires = ["poetry-core>=2.0"]
 build-backend = "poetry.core.masonry.api"

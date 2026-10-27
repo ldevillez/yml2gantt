@@ -2,7 +2,10 @@
 
 import datetime as dt
 import math
+import string
 from numbers import Real
+
+from .errors import GanttError, check_number, check_text, describe, did_you_mean
 
 #: Supported decompositions.
 SCALES = ("day", "week", "month", "trimester", "abstract")
@@ -15,19 +18,29 @@ DEFAULT_LABELS = {
     "abstract": "{n}",
 }
 
+# Placeholders that label_format can use.
+_PLACEHOLDERS = {"date", "q", "n"}
+
+_DATE_HINT = ("dates are written YYYY-MM-DD (2026-01-05), or as ISO week "
+              "dates YYYY-Www-D in quotes (\"2026-W02-1\")")
+_SPAN_HINT = ("use a number of days (3, 2.5), or text such as \"3d\" or "
+              "\"2w\"")
+
 # Finer decomposition used for the light grid lines.
 _MINOR = {"day": None, "week": "day", "month": "week", "trimester": "month"}
 
 _UNITS = {"d": 1, "w": 7}
 
 
-def to_date(value):
+def to_date(value, what="date"):
     """Parse a date.
 
     Parameters
     ----------
     value : datetime.date, datetime.datetime or str
         Date, or ISO string such as ``"2025-09-21"`` or ``"2025-W38-7"``.
+    what : str, optional
+        Name of the value, for error messages.
 
     Returns
     -------
@@ -38,8 +51,14 @@ def to_date(value):
     if isinstance(value, dt.date):
         return value
     if isinstance(value, str):
-        return dt.date.fromisoformat(value)
-    raise TypeError(f"Cannot convert {value!r} to a date")
+        try:
+            return dt.date.fromisoformat(value.strip())
+        except ValueError as err:
+            reason = "" if "Invalid isoformat" in str(err) else f" ({err})"
+            raise GanttError(f"invalid {what} {value!r}{reason}: "
+                             f"{_DATE_HINT}") from None
+    raise GanttError(f"{what} must be a date, got {describe(value)}: "
+                     f"{_DATE_HINT}")
 
 
 def _is_span(value):
@@ -99,27 +118,80 @@ class Scale:
 
     def __init__(self, kind, start, end=None, duration=None,
                  label_format=None, label_every=1, step=1):
-        if kind not in SCALES:
-            raise ValueError(f"Unknown scale {kind!r}, use one of {SCALES}")
+        if not isinstance(kind, str) or kind.strip().lower() not in SCALES:
+            hint = did_you_mean(kind, SCALES) if isinstance(kind, str) else ""
+            raise GanttError(f"unknown scale {kind!r}{hint}: use one of "
+                             f"{', '.join(SCALES)}")
         if end is not None and duration is not None:
-            raise ValueError("Give 'end' or 'duration', not both")
-        self.kind = kind
-        self.label_format = label_format or DEFAULT_LABELS[kind]
-        self.label_every = int(label_every)
-        self.step = step
+            raise GanttError("give 'end' or 'duration' for the chart, not both")
+        self.kind = kind.strip().lower()
+        self.step = check_number(step, "'step'", minimum=0)
+        self.label_every = check_number(label_every, "'label_every'",
+                                        minimum=1, integer=True)
+        self.label_format = (DEFAULT_LABELS[self.kind] if label_format is None
+                             else check_text(label_format, "'label_format'"))
+        self._check_label_format()
 
         if self.abstract:
-            self.start = float(start)
+            if start is None:
+                start = 0
+            if isinstance(start, (dt.date, str)):
+                raise GanttError(
+                    f"the abstract scale starts at a number, got "
+                    f"{describe(start)}: use 'start: 0', or a dated scale "
+                    f"(day, week, month, trimester) for calendar dates")
+            self.start = float(check_number(start, "'start'"))
         else:
-            self.start = to_date(start)
+            if start is None:
+                raise GanttError(
+                    f"'start' is missing: the {self.kind} scale needs a start "
+                    f"date such as 2026-01-05 (or use 'scale: abstract' for "
+                    f"numbered periods 1, 2, 3…)")
+            if isinstance(start, Real) and not isinstance(start, bool):
+                raise GanttError(
+                    f"the {self.kind} scale needs a start date such as "
+                    f"2026-01-05, got {describe(start)} (use 'scale: "
+                    f"abstract' for numbered periods 1, 2, 3…)")
+            self.start = to_date(start, "'start'")
         #: True when the length comes from the tasks (see `fit`).
         self.auto = end is None and duration is None
         self.length = None
         if not self.auto:
-            self.length = (self.to_x(end) if duration is None
-                           else self.to_span(duration))
+            self.length = (self.to_x(end, what="'end'") if duration is None
+                           else self.to_span(duration, what="'duration'"))
             if self.length <= 0:
-                raise ValueError("The gantt must end after its start")
+                given = (f"'end' {self.format_x(self.length)}"
+                         if duration is None else f"'duration' {duration!r}")
+                raise GanttError(f"the chart must end after its start, but "
+                                 f"{given} is not after the start "
+                                 f"{self.format_x(0)}")
+
+    def _check_label_format(self):
+        allowed = {"n"} if self.abstract else _PLACEHOLDERS
+        try:
+            fields = [f for _, f, _, _ in string.Formatter().parse(
+                self.label_format) if f is not None]
+        except ValueError as err:
+            raise GanttError(f"invalid 'label_format' {self.label_format!r}: "
+                             f"{err} (write a literal brace as {{{{ or }}}})"
+                             ) from None
+        for f in fields:
+            root = f.split(".")[0].split("[")[0]
+            if root not in allowed:
+                if root in _PLACEHOLDERS:
+                    raise GanttError(
+                        f"'label_format' uses {{{root}}}, which the abstract "
+                        f"scale does not have: use {{n}} (period number)")
+                shown = "{}" if not root else f"{{{root}}}"
+                raise GanttError(
+                    f"unknown placeholder {shown} in 'label_format' "
+                    f"{self.label_format!r}{did_you_mean(root, allowed)}: use "
+                    + ", ".join(f"{{{p}}}" for p in sorted(allowed)))
+        try:
+            self._label(1, None if self.abstract else dt.date(2026, 1, 5))
+        except (ValueError, TypeError, AttributeError) as err:
+            raise GanttError(f"invalid 'label_format' {self.label_format!r}: "
+                             f"{err}") from None
 
     def fit(self, last_end=None, last_point=None):
         """Set the length so that the axis covers the content.
@@ -141,8 +213,9 @@ class Scale:
         if last_point is not None:
             length = max(length, self._boundary(last_point, strict=True))
         if length <= 0:
-            raise ValueError("The gantt must end after its start: "
-                             "all tasks are before the start")
+            raise GanttError(
+                f"every task is before the chart start {self.format_x(0)}: "
+                f"move the start earlier, or the tasks later")
         self.length = length
 
     def _boundary(self, x, strict):
@@ -169,7 +242,7 @@ class Scale:
             return self.start + self.length
         return self.start + dt.timedelta(days=self.length)
 
-    def to_x(self, value, origin=0.0):
+    def to_x(self, value, origin=0.0, what="position"):
         """Convert a time to an x position.
 
         Parameters
@@ -178,37 +251,75 @@ class Scale:
             Offset from ``origin`` (``3``, ``"2w"``) or date.
         origin : float, optional
             Position that offsets are relative to.
+        what : str, optional
+            Name of the value, for error messages.
 
         Returns
         -------
         float
             Days (or units) since the gantt start.
         """
+        if value is None:
+            raise GanttError(f"{what} is empty")
+        if isinstance(value, bool):
+            raise GanttError(f"{what} must be a date or an offset, got "
+                             f"{describe(value)}")
         if isinstance(value, Real) or _is_span(value):
-            return origin + self.to_span(value)
+            return origin + self.to_span(value, what)
         if self.abstract:
-            raise TypeError(f"Abstract scale only accepts numbers, got {value!r}")
-        return float((to_date(value) - self.start).days)
+            raise GanttError(f"{what}: the abstract scale only takes numbers, "
+                             f"got {describe(value)}")
+        if isinstance(value, str):
+            try:
+                date = dt.date.fromisoformat(value.strip())
+            except ValueError:
+                raise GanttError(
+                    f"invalid {what} {value!r}: give a date (YYYY-MM-DD, or "
+                    f"\"YYYY-Www-D\" in quotes) or an offset (3, \"3d\", "
+                    f"\"2w\")") from None
+            return float((date - self.start).days)
+        return float((to_date(value, what) - self.start).days)
 
-    def to_span(self, value):
+    def to_span(self, value, what="duration"):
         """Convert a duration to a length on the x axis.
 
         Parameters
         ----------
         value : float or str
             Number, or string such as ``"3d"`` or ``"2w"`` (dated scales).
+        what : str, optional
+            Name of the value, for error messages.
 
         Returns
         -------
         float
         """
-        if isinstance(value, Real):
-            return float(value)
-        if isinstance(value, str) and not self.abstract:
+        if value is None:
+            raise GanttError(f"{what} is empty")
+        if isinstance(value, Real) and not isinstance(value, bool):
+            return float(check_number(value, what))
+        if isinstance(value, str):
+            if self.abstract:
+                raise GanttError(f"{what}: the abstract scale only takes "
+                                 f"numbers, got {describe(value)}")
             text = value.strip().lower()
-            if text and text[-1] in _UNITS:
-                return float(text[:-1]) * _UNITS[text[-1]]
-        raise ValueError(f"Invalid duration {value!r}")
+            if _is_span(text):
+                return float(check_number(float(text[:-1]), what)
+                             * _UNITS[text[-1]])
+            if text[-1:].isalpha() and text[-1] not in _UNITS:
+                raise GanttError(
+                    f"invalid {what} {value!r}: unknown unit {text[-1]!r}, "
+                    f"use 'd' (days) or 'w' (weeks). There is no month unit, "
+                    f"as months have different lengths: use dates instead")
+            raise GanttError(f"invalid {what} {value!r}: {_SPAN_HINT}")
+        raise GanttError(f"invalid {what}: expected a duration, got "
+                         f"{describe(value)}: {_SPAN_HINT}")
+
+    def format_x(self, x):
+        """Readable text for position ``x``: a date, or a number."""
+        if self.abstract:
+            return f"{self.start + x:g}"
+        return (self.start + dt.timedelta(days=x)).isoformat()
 
     def date_at(self, x):
         """Date at position ``x`` (``None`` for abstract scales)."""

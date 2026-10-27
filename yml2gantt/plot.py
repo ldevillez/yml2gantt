@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 
 from .colors import get_color_cycler, lighten_color
+from .errors import GanttError
 
 TASK_GAP = 1.4  # Vertical step before a top-level task
 SUBTASK_GAP = 1.0  # Vertical step before a subtask
@@ -92,7 +93,7 @@ def draw(gantt, ax=None, figsize=None, lighten=0.3):
     ax : matplotlib.axes.Axes
     """
     if not gantt.tasks:
-        raise ValueError("The gantt has no task")
+        raise GanttError("the chart has no task: add a 'tasks' list")
     gantt.fit_scale()
     rows = sum(1 + len(t.subtasks) for t in gantt.tasks)
     if ax is None:
