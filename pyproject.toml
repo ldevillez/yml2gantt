@@ -1,4 +1,4 @@
-# Standard (PEP 621) metadata: works with Poetry 2, pip, uv and `python -m build`.
+# Standard (PEP 621) metadata: works with uv, pip and `python -m build`.
 
 [project]
 name = "yml2gantt"
@@ -38,15 +38,15 @@ Issues = "https://github.com/ldevillez/yml2gantt/issues"
 [project.scripts]
 yml2gantt = "yml2gantt.cli:main"
 
-[tool.poetry]
-packages = [{ include = "yml2gantt" }]
+[dependency-groups]
+dev = ["pytest>=8.0"]
 
-[tool.poetry.group.dev.dependencies]
-pytest = ">=8.0"
+[tool.hatch.build.targets.sdist]
+exclude = [".github", "docs"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [build-system]
-requires = ["poetry-core>=2.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"

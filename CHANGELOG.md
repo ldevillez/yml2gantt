@@ -25,6 +25,8 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Development uses uv instead of Poetry, and the package is built with
+  hatchling.
 - Invalid input raises `GanttError` instead of `TypeError`.
 - `Gantt.start` has no default on dated scales: a missing start date is
   reported instead of failing on `0`.

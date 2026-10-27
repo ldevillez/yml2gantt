@@ -416,9 +416,9 @@ load_yaml("examples/roadmap.yml").draw(ax=ax2)
 ```sh
 git clone https://github.com/ldevillez/yml2gantt
 cd yml2gantt
-poetry install          # or: pip install -e . pytest
-poetry run yml2gantt examples/minimal.yml
-poetry run pytest       # tests in tests/
+uv sync                 # or: pip install -e . pytest
+uv run yml2gantt examples/minimal.yml
+uv run pytest           # tests in tests/
 ```
 
 Project layout:
@@ -445,10 +445,10 @@ when a version tag is pushed. It builds the package, publishes it on
 PyPI and creates the GitHub release, with the changelog entry as notes.
 
 ```sh
-poetry version minor        # or patch / major: updates pyproject.toml
+uv version --bump minor     # or patch / major: updates pyproject.toml
 # move the "Unreleased" notes of CHANGELOG.md under the new version
-git commit -am "Release v$(poetry version -s)"
-git tag "v$(poetry version -s)"
+git commit -am "Release v$(uv version --short)"
+git tag "v$(uv version --short)"
 git push origin main --tags
 ```
 
